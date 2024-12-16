@@ -114,48 +114,51 @@ def speckle_size(image, show=False) -> float:
 
 	return pix
 
+def parse_args():
+	parser = argparse.ArgumentParser(description ='speckle generator')
+	parser.add_argument('-w', '--width', metavar ='W', 
+						type = int,
+						required=True,
+						help ='width of the image')
+	parser.add_argument('-l', '--length', metavar ='H', 
+						type = int,
+						required=True,
+						help ='length of the image')
+	parser.add_argument('-r', '--radius', metavar ='R', 
+						type = int,
+						required=True,
+						help ='radius of the speckle circle')
+	parser.add_argument('-bw', '--bw_balance',
+						metavar="[0.0-1.0]",
+						type = float,
+						required=True,
+						help ='black/white balance')
+	parser.add_argument('--output',
+						metavar="O",
+						type = str, 
+						help ='output file name')
+	parser.add_argument('--ppi',
+						required=False,
+						type = float, 
+						help ='image resolution in ppi, default is #todo')
+	parser.add_argument('--invert',
+						required=False,
+						action='store_true',
+						help = 'show white pixels on black background rather than the other way round')
+	parser.add_argument('--seed',
+						required=False,
+						type = int,
+						help = 'random number seed')
+	return parser.parse_args()
 
-parser = argparse.ArgumentParser(description ='speckle generator')
-parser.add_argument('-w', '--width', metavar ='W', 
-					type = int,
-					required=True,
-					help ='width of the image')
-parser.add_argument('-l', '--length', metavar ='H', 
-					type = int,
-					required=True,
-					help ='length of the image')
-parser.add_argument('-r', '--radius', metavar ='R', 
-					type = int,
-					required=True,
-					help ='radius of the speckle circle')
-parser.add_argument('-bw', '--bw_balance',
-					metavar="[0.0-1.0]",
-					type = float,
-					required=True,
-					help ='black/white balance')
-parser.add_argument('--output',
-					metavar="O",
-					type = str, 
-					help ='output file name')
-parser.add_argument('--ppi',
-					required=False,
-					type = float, 
-					help ='image resolution in ppi, default is #todo')
-parser.add_argument('--invert',
-					required=False,
-					action='store_true',
-					help = 'show white pixels on black background rather than the other way round')
-parser.add_argument('--seed',
-					required=False,
-					type = int,
-					help = 'random number seed')
-args = parser.parse_args()
 
-parser.print_help()
+if __name__ == "__main()__":
+	args = parse_args()
+	# parser.print_help()
 
-random.seed(args.seed)
+	random.seed(args.seed)
 
-img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance)
-print(white_balance(img))
-print(speckle_size(img, show=True))
-img.save("img.png")
+	img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance)
+	print(white_balance(img))
+	print(speckle_size(img, show=True))
+	img.save("img.png")

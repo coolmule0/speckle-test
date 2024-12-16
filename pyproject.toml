@@ -3,18 +3,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "speckle"
+name = "speckle-coolmule0"
 version = "0.1"
-description = "A speckle pattern generator for CIS"
+description = "A speckle pattern generator for DIC (Digital Image Correlation)"
 authors = [
   { name = "coolmule0", email = "coolmule0@hotmail.co.uk" },
 ]
 license = { file = "LICENSE" }
-readme = "readme.md"
+readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License (GPL)",
-    "Private :: Do Not Upload",
 ]
 requires-python = ">=3.13"
 dependencies = [
