@@ -1,19 +1,24 @@
 import argparse
-import random
 import math
+import random
 import time
 
-
-import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
+import numpy as np
 import scipy.fft
+from PIL import Image, ImageDraw
 
 
-def white_balance(image) -> float:
-	"""
-	Calculate the white/black balance of an image. 1=white. 0=black
-	"""
+def white_balance(image: Image) -> float:
+	"""Calculates the proportion of background visible in an image
+
+	Args:
+		image (Image): Pillow image
+
+	Returns:
+		float: Between 0 and 1. 1=all background. 0=all speckle
+	"""	
+
 	image_array = np.array(image)
 
 	# Calculate the mean values for each channel (R, G, B)
@@ -25,17 +30,20 @@ def white_balance(image) -> float:
 	return max_mean / 255
 
 
-def speckle(image_width=500, image_height=500, circle_radius=5, circle_color = (0,0,0), background=(255,255,255), desired_balance=0.5, variability=0):
-	"""
-	# Generate an image of a spaced pattern of circles
-	# User-defined parameters
-	# image_width = 500         # Width of the image
-	# image_height = 500        # Height of the image
-	# circle_radius = 5        # Radius of the circles
-	# # spacing = 60              # Spacing between circle centers
-	# circle_color = (0, 0, 0)  # Color of the filled circles (black in this case)
-	# desired_balance = 0.5       # how much white/black balance in the image
-	# variability = 0.5 # between 0-1. 0 = uniform 1= up to 2 boxes away
+def speckle(image_width: int = 500, image_height: int = 500, circle_radius: int = 5, circle_color: tuple = (0,0,0), background: tuple = (255,255,255), desired_balance: float = 0.5, variability: int = 0) -> Image:
+	"""Create an image with a speckle pattern
+
+	Args:
+		image_width (int, optional): Image width in pixels. Defaults to 500.
+		image_height (int, optional): Image height in pixels. Defaults to 500.
+		circle_radius (int, optional): Speckle radius in pixels. Defaults to 5.
+		circle_color (tuple, optional): (r,g,b) channels of color for the speckle. Each channel is an int between 0 and 255. Defaults to (0,0,0).
+		background (tuple, optional): (r,g,b) channels of color for the background. Each channel is an int between 0 and 255. Defaults to (255,255,255).
+		desired_balance (float, optional): how much of the image should be approximately covered in speckles. Between 0 and 1. Defaults to 0.5.
+		variability (int, optional): How random the speckles are placed. 0 is uniform grid. 1 is up to a box worth of distance away. Defaults to 0.
+
+	Returns:
+		Image: A speckle pattern
 	"""
 	# Create a blank white image
 	image = Image.new("RGB", (image_width, image_height), background)
@@ -66,7 +74,13 @@ def speckle(image_width=500, image_height=500, circle_radius=5, circle_color = (
 			draw.ellipse([left_up, right_down], fill=circle_color)
 	return image
 
-def speckle_fft(image, show=True):
+def speckle_fft(image: Image, show: bool = True) -> None:
+	"""Computes a fast fourier transform of an image
+
+	Args:
+		image (Image): Image to examine
+		show (bool, optional): show the resulting plot. Defaults to True.
+	"""	
 	image_f = image.convert('L')  # Convert to grayscale ('L' mode)
 
 	# Convert PIL image to a numpy array
@@ -109,7 +123,12 @@ def speckle_fft(image, show=True):
 		plt.tight_layout()
 		plt.show()
 
-def parse_args():
+def parse_args() -> argparse.ArgumentParser:
+	"""Handle arguments parsed when calling this as a script
+
+	Returns:
+		argparse.ArgumentParser: Everyones favorite argument
+	"""	
 	parser = argparse.ArgumentParser(description ='speckle generator')
 	parser.add_argument('-w', '--width', metavar ='W', 
 						type = int,
@@ -164,9 +183,11 @@ if __name__ == "__main__":
 		speckle_c = (255,255,255)
 		background_c = (0,0,0)
 
+	# Generate a speckled image
 	img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance, circle_color=speckle_c, background=background_c)
 	print("The amount of white balance is ", white_balance(img))
 	
+	# Show the Fourier transform
 	speckle_fft(img)
 
 	print("saving pattern to img.png")
