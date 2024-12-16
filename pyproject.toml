@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "speckle"
+version = "0.1"
+description = "A speckle pattern generator for CIS"
+authors = [
+  { name = "coolmule0", email = "coolmule0@hotmail.co.uk" },
+]
+license = { file = "LICENSE" }
+readme = "readme.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: GNU GPL",
+    "Private :: Do Not Upload",
+]
+requires-python = ">=3.13"
+dependencies = [
+  "numpy>=2.2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -79,7 +79,6 @@ def speckle_size(image, show=False) -> float:
 	# 3. Compute the 1D FFT for the central row
 	fft_central_row = np.fft.fft(central_row)
 
-	# 4. Compute the magnitude of the FFT
 	fft_central_row_magnitude = np.abs(fft_central_row)
 
 	# heights set to a large value to remove the noise
