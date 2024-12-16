@@ -2,4 +2,4 @@
 
 A simple repo to generate a speckle pattern
 
-For developing this code run `pip install --editable .`
+For developing this code run `pip install -e .`

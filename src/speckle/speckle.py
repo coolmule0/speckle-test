@@ -1,6 +1,7 @@
 import argparse
 import random
 import math
+import time
 
 
 import numpy as np
@@ -11,7 +12,7 @@ import scipy.fft
 
 def white_balance(image) -> float:
 	"""
-	Calculatethe white/black balance of an image. 1=white. 0=black
+	Calculate the white/black balance of an image. 1=white. 0=black
 	"""
 	image_array = np.array(image)
 
@@ -24,9 +25,9 @@ def white_balance(image) -> float:
 	return max_mean / 255
 
 
-def speckle(image_width=500, image_height=500, circle_radius=5, circle_color = (0,0,0), desired_balance=0.5, variability=0):
+def speckle(image_width=500, image_height=500, circle_radius=5, circle_color = (0,0,0), background=(255,255,255), desired_balance=0.5, variability=0):
 	"""
-	# A spaced pattern of circles
+	# Generate an image of a spaced pattern of circles
 	# User-defined parameters
 	# image_width = 500         # Width of the image
 	# image_height = 500        # Height of the image
@@ -37,11 +38,11 @@ def speckle(image_width=500, image_height=500, circle_radius=5, circle_color = (
 	# variability = 0.5 # between 0-1. 0 = uniform 1= up to 2 boxes away
 	"""
 	# Create a blank white image
-	image = Image.new("RGB", (image_width, image_height), "white")
+	image = Image.new("RGB", (image_width, image_height), background)
 	draw = ImageDraw.Draw(image)
 
 	spacing = int(circle_radius * math.sqrt(math.pi / desired_balance))
-	print(spacing)
+	# print(spacing)
 
 	# Calculate the number of circles in both x and y directions
 	num_circles_x = image_width // spacing
@@ -65,54 +66,48 @@ def speckle(image_width=500, image_height=500, circle_radius=5, circle_color = (
 			draw.ellipse([left_up, right_down], fill=circle_color)
 	return image
 
-def speckle_size(image, show=False) -> float:
-	"""
-	Calculates the average speckle size of an image using fourier transform
-	"""
-	image = image.convert("L")  # Convert image to grayscale
-	image_array = np.array(image)
+def speckle_fft(image, show=True):
+	image_f = image.convert('L')  # Convert to grayscale ('L' mode)
 
-	# 2. Extract the central row and central column
-	# Central row (if the image has an odd number of rows)
-	central_row = image_array[image_array.shape[0] // 2, :]
+	# Convert PIL image to a numpy array
+	image_array = np.array(image_f)
 
-	# 3. Compute the 1D FFT for the central row
-	fft_central_row = np.fft.fft(central_row)
+	fft_image = scipy.fft.fft2(image_array)
 
-	fft_central_row_magnitude = np.abs(fft_central_row)
+	# Shift the zero-frequency component to the center
+	fft_image_shifted = scipy.fft.fftshift(fft_image)
 
-	# heights set to a large value to remove the noise
-	peaks_info = scipy.signal.find_peaks(fft_central_row_magnitude, height=15000)
+	# Compute the magnitude spectrum 
+	magnitude_spectrum = np.abs(fft_image_shifted)
+	# log it
+	magnitude_spectrum_log = np.log(magnitude_spectrum + 1)
 
-	freques = np.fft.fftfreq(central_row.size)
-	# Get the actual peak locations from the data structure
-	peaks = peaks_info[0]
+	# use the central (horizontal) row of the 2d FFT
+	central_row = magnitude_spectrum[magnitude_spectrum_log.shape[0] // 2]
 
-	# Should have a +freqency and a matching -frequency peak only in the signal
-	assert len(peaks) == 2
-	
-	peaks_freq = freques[peaks]
-	# since the two frequencies match, just get one of them
-	pix = 1/peaks_freq[0]
+	# frequency plot is symetic, so remove half
+	half_ind = central_row.shape[0] // 2 + 1
 
 	if show:
 		# Display the original image
 		plt.subplot(1, 2, 1)
 		plt.imshow(image_array, cmap='gray')
 		plt.title("Original Grayscale Image")
-		plt.axis("off")
+		# plt.axis("off")
 
-		# Plot the FFT of the central row
+		# # Create frequency axes
+		M, N = image_array.shape
+		freq_x = np.fft.fftfreq(N, 1)  # Horizontal frequency axis
+		freq_x = np.fft.fftshift(freq_x)  # Shift the zero-frequency component to the center
+
 		plt.subplot(1, 2, 2)
-		plt.plot(np.fft.fftfreq(central_row.size), fft_central_row_magnitude)
-		plt.title("FFT of Central Row")
-		plt.xlabel("Frequency")
-		plt.ylabel("Magnitude")
+		plt.plot(freq_x[half_ind:], central_row[half_ind:])
+		plt.title("Magnitude FFT Spectrum of Speckles")
+		plt.xlabel('Horizontal Frequency')
+		plt.ylabel('Magitude')
 
 		plt.tight_layout()
 		plt.show()
-
-	return pix
 
 def parse_args():
 	parser = argparse.ArgumentParser(description ='speckle generator')
@@ -132,15 +127,16 @@ def parse_args():
 						metavar="[0.0-1.0]",
 						type = float,
 						required=True,
-						help ='black/white balance')
+						help ='black/white balance. 0 is no speckles. 1 is entirely speckles')
 	parser.add_argument('--output',
 						metavar="O",
 						type = str, 
 						help ='output file name')
-	parser.add_argument('--ppi',
+	parser.add_argument('--dpi',
 						required=False,
-						type = float, 
-						help ='image resolution in ppi, default is #todo')
+						type = int,
+						default=300,
+						help ='image resolution in pixels per inch, default is 300')
 	parser.add_argument('--invert',
 						required=False,
 						action='store_true',
@@ -148,17 +144,31 @@ def parse_args():
 	parser.add_argument('--seed',
 						required=False,
 						type = int,
-						help = 'random number seed')
+						help = 'random number seed. Timed-random if unset')
 	return parser.parse_args()
 
 
-if __name__ == "__main()__":
+if __name__ == "__main__":
 	args = parse_args()
-	# parser.print_help()
 
-	random.seed(args.seed)
+	# Initialize seed random
+	if args.seed:
+		random.seed(args.seed)
+	else:
+		random.seed(time.time())
+	
+	# Set figure colours
+	speckle_c = (0,0,0)
+	background_c = (255,255,255)
+	if args.invert:
+		speckle_c = (255,255,255)
+		background_c = (0,0,0)
 
-	img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance)
-	print(white_balance(img))
-	print(speckle_size(img, show=True))
-	img.save("img.png")
+	img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance, circle_color=speckle_c, background=background_c)
+	print("The amount of white balance is ", white_balance(img))
+	
+	speckle_fft(img)
+
+	print("saving pattern to img.png")
+	img.save("img.png", dpi=(args.dpi, args.dpi))
+

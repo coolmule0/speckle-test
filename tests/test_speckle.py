@@ -8,3 +8,15 @@ def test_image_size():
     width, height = image.size
     assert width == 20
     assert height == 20
+
+def test_speckle_size():
+    """
+    A test speckle image calculates the correct pixel size using a fourier transform
+    """
+    pass
+
+def test_white_balance():
+    # generates a single circle centred on (6,6)
+    image = speckle.speckle(image_width=13, image_height=13,  circle_radius=5)
+    # 42% of the image is speckle pixels
+    assert int(speckle.white_balance(image) * 100) == 42

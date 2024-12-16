@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 notebook = "*"
 numpy = "*"
-pandas = "*"
 matplotlib = "*"
 pillow = "*"
 scipy = "*"
@@ -14,6 +13,7 @@ scipy = "*"
 [dev-packages]
 pytest = "*"
 ruff = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.13"
