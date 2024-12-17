@@ -56,22 +56,32 @@ def speckle(image_width: int = 500, image_height: int = 500, circle_radius: int 
 	num_circles_x = image_width // spacing
 	num_circles_y = image_height // spacing
 
-	# Draw circles at regular intervals
-	for i in range(-1,num_circles_x+1):
-		for j in range(-1,num_circles_y+1):
-			# Calculate the center of each circle
-			center_x = i * spacing + spacing // 2
-			center_y = j * spacing + spacing // 2
+	# Create the grid of circle centers using meshgrid for x and y positions
+	x_grid, y_grid = np.meshgrid(np.arange(num_circles_x + 1) * spacing + spacing // 2,
+								 np.arange(num_circles_y + 1) * spacing + spacing // 2)
 
-			offset_x = random.randint(int(-spacing*variability/2), int(spacing*variability/2))
-			offset_y = random.randint(int(-spacing*variability/2), int(spacing*variability/2))
-			center_x += offset_x
-			center_y += offset_y
+	# Flatten the grids to get 1D arrays of circle centers
+	x_centers = x_grid.flatten()
+	y_centers = y_grid.flatten()
 
-			# Draw the circle (outline)
-			left_up = (center_x - circle_radius, center_y - circle_radius)
-			right_down = (center_x + circle_radius, center_y + circle_radius)
-			draw.ellipse([left_up, right_down], fill=circle_color)
+
+	# Apply random offsets for variability in both x and y directions
+	if variability > 0:
+		offset_x = np.random.randint(-spacing * variability // 2, spacing * variability // 2, size=x_centers.shape)
+		offset_y = np.random.randint(-spacing * variability // 2, spacing * variability // 2, size=y_centers.shape)
+	else:
+		offset_x = np.zeros_like(x_centers)
+		offset_y = np.zeros_like(y_centers)
+
+	x_centers += offset_x
+	y_centers += offset_y
+
+	# Draw the circles using the vectorized coordinates
+	for x, y in zip(x_centers, y_centers):
+		left_up = (x - circle_radius, y - circle_radius)
+		right_down = (x + circle_radius, y + circle_radius)
+		draw.ellipse([left_up, right_down], fill=circle_color)
+
 	return image
 
 def speckle_fft(image: Image, show: bool = True) -> None:
@@ -184,7 +194,7 @@ if __name__ == "__main__":
 		background_c = (0,0,0)
 
 	# Generate a speckled image
-	img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance, circle_color=speckle_c, background=background_c)
+	img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance, circle_color=speckle_c, background=background_c, variability=0.5)
 	print("The amount of white balance is ", white_balance(img))
 	
 	# Show the Fourier transform
