@@ -75,7 +75,7 @@ def speckle(image_width: int = 500, image_height: int = 500, circle_radius: int 
 	return image
 
 def speckle_fft(image: Image, show: bool = True) -> None:
-	"""Computes a fast fourier transform of an image
+	"""Computes and shows a fast fourier transform of an image
 
 	Args:
 		image (Image): Image to examine
