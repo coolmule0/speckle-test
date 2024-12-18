@@ -1,19 +1,24 @@
 import argparse
-import random
 import math
+import random
 import time
 
-
-import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
+import numpy as np
 import scipy.fft
+from PIL import Image, ImageDraw
 
 
-def white_balance(image) -> float:
-	"""
-	Calculate the white/black balance of an image. 1=white. 0=black
-	"""
+def white_balance(image: Image) -> float:
+	"""Calculates the proportion of background visible in an image
+
+	Args:
+		image (Image): Pillow image
+
+	Returns:
+		float: Between 0 and 1. 1=all background. 0=all speckle
+	"""	
+
 	image_array = np.array(image)
 
 	# Calculate the mean values for each channel (R, G, B)
@@ -25,17 +30,20 @@ def white_balance(image) -> float:
 	return max_mean / 255
 
 
-def speckle(image_width=500, image_height=500, circle_radius=5, circle_color = (0,0,0), background=(255,255,255), desired_balance=0.5, variability=0):
-	"""
-	# Generate an image of a spaced pattern of circles
-	# User-defined parameters
-	# image_width = 500         # Width of the image
-	# image_height = 500        # Height of the image
-	# circle_radius = 5        # Radius of the circles
-	# # spacing = 60              # Spacing between circle centers
-	# circle_color = (0, 0, 0)  # Color of the filled circles (black in this case)
-	# desired_balance = 0.5       # how much white/black balance in the image
-	# variability = 0.5 # between 0-1. 0 = uniform 1= up to 2 boxes away
+def speckle(image_width: int = 500, image_height: int = 500, circle_radius: int = 5, circle_color: tuple = (0,0,0), background: tuple = (255,255,255), desired_balance: float = 0.5, variability: int = 0) -> Image:
+	"""Create an image with a speckle pattern
+
+	Args:
+		image_width (int, optional): Image width in pixels. Defaults to 500.
+		image_height (int, optional): Image height in pixels. Defaults to 500.
+		circle_radius (int, optional): Speckle radius in pixels. Defaults to 5.
+		circle_color (tuple, optional): (r,g,b) channels of color for the speckle. Each channel is an int between 0 and 255. Defaults to (0,0,0).
+		background (tuple, optional): (r,g,b) channels of color for the background. Each channel is an int between 0 and 255. Defaults to (255,255,255).
+		desired_balance (float, optional): how much of the image should be approximately covered in speckles. Between 0 and 1. Defaults to 0.5.
+		variability (int, optional): How random the speckles are placed. 0 is uniform grid. 1 is up to a box worth of distance away. Defaults to 0.
+
+	Returns:
+		Image: A speckle pattern
 	"""
 	# Create a blank white image
 	image = Image.new("RGB", (image_width, image_height), background)
@@ -48,25 +56,41 @@ def speckle(image_width=500, image_height=500, circle_radius=5, circle_color = (
 	num_circles_x = image_width // spacing
 	num_circles_y = image_height // spacing
 
-	# Draw circles at regular intervals
-	for i in range(-1,num_circles_x+1):
-		for j in range(-1,num_circles_y+1):
-			# Calculate the center of each circle
-			center_x = i * spacing + spacing // 2
-			center_y = j * spacing + spacing // 2
+	# Create the grid of circle centers using meshgrid for x and y positions
+	x_grid, y_grid = np.meshgrid(np.arange(num_circles_x + 1) * spacing + spacing // 2,
+								 np.arange(num_circles_y + 1) * spacing + spacing // 2)
 
-			offset_x = random.randint(int(-spacing*variability/2), int(spacing*variability/2))
-			offset_y = random.randint(int(-spacing*variability/2), int(spacing*variability/2))
-			center_x += offset_x
-			center_y += offset_y
+	# Flatten the grids to get 1D arrays of circle centers
+	x_centers = x_grid.flatten()
+	y_centers = y_grid.flatten()
 
-			# Draw the circle (outline)
-			left_up = (center_x - circle_radius, center_y - circle_radius)
-			right_down = (center_x + circle_radius, center_y + circle_radius)
-			draw.ellipse([left_up, right_down], fill=circle_color)
+
+	# Apply random offsets for variability in both x and y directions
+	if variability > 0:
+		offset_x = np.random.randint(-spacing * variability // 2, spacing * variability // 2, size=x_centers.shape)
+		offset_y = np.random.randint(-spacing * variability // 2, spacing * variability // 2, size=y_centers.shape)
+	else:
+		offset_x = np.zeros_like(x_centers)
+		offset_y = np.zeros_like(y_centers)
+
+	x_centers += offset_x
+	y_centers += offset_y
+
+	# Draw the circles using the vectorized coordinates
+	for x, y in zip(x_centers, y_centers):
+		left_up = (x - circle_radius, y - circle_radius)
+		right_down = (x + circle_radius, y + circle_radius)
+		draw.ellipse([left_up, right_down], fill=circle_color)
+
 	return image
 
-def speckle_fft(image, show=True):
+def speckle_fft(image: Image, show: bool = True) -> None:
+	"""Computes and shows a fast fourier transform of an image
+
+	Args:
+		image (Image): Image to examine
+		show (bool, optional): show the resulting plot. Defaults to True.
+	"""	
 	image_f = image.convert('L')  # Convert to grayscale ('L' mode)
 
 	# Convert PIL image to a numpy array
@@ -109,7 +133,12 @@ def speckle_fft(image, show=True):
 		plt.tight_layout()
 		plt.show()
 
-def parse_args():
+def parse_args() -> argparse.ArgumentParser:
+	"""Handle arguments parsed when calling this as a script
+
+	Returns:
+		argparse.ArgumentParser: Everyones favorite argument
+	"""	
 	parser = argparse.ArgumentParser(description ='speckle generator')
 	parser.add_argument('-w', '--width', metavar ='W', 
 						type = int,
@@ -164,9 +193,11 @@ if __name__ == "__main__":
 		speckle_c = (255,255,255)
 		background_c = (0,0,0)
 
-	img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance, circle_color=speckle_c, background=background_c)
+	# Generate a speckled image
+	img = speckle(image_width = args.width, image_height = args.length, circle_radius=args.radius, desired_balance=args.bw_balance, circle_color=speckle_c, background=background_c, variability=0.5)
 	print("The amount of white balance is ", white_balance(img))
 	
+	# Show the Fourier transform
 	speckle_fft(img)
 
 	print("saving pattern to img.png")
