@@ -49,7 +49,11 @@ def speckle(image_width: int = 500, image_height: int = 500, circle_radius: int 
 	image = Image.new("RGB", (image_width, image_height), background)
 	draw = ImageDraw.Draw(image)
 
-	spacing = int(circle_radius * math.sqrt(math.pi / desired_balance))
+	if desired_balance == 0:
+		# no speckles wanted
+		return image
+	else:
+		spacing = int(circle_radius * math.sqrt(math.pi / desired_balance))
 	# print(spacing)
 
 	# Calculate the number of circles in both x and y directions
@@ -144,7 +148,7 @@ def parse_args() -> argparse.ArgumentParser:
 						type = int,
 						required=True,
 						help ='width of the image')
-	parser.add_argument('-l', '--length', metavar ='H', 
+	parser.add_argument('-l', '--length', metavar ='L', 
 						type = int,
 						required=True,
 						help ='length of the image')
@@ -156,16 +160,24 @@ def parse_args() -> argparse.ArgumentParser:
 						metavar="[0.0-1.0]",
 						type = float,
 						required=True,
-						help ='black/white balance. 0 is no speckles. 1 is entirely speckles')
+						help ='Approximate black/white balance. 0 is no speckles. 1 is entirely speckles')
+	parser.add_argument('-i', '--image_format',
+						# metavar="[0.0-1.0]",
+						type = str,
+						required=True,
+						choices=["png", "tiff", "bmp"],
+						help ='Format of the resulting output image')
 	parser.add_argument('--output',
 						metavar="O",
-						type = str, 
+						type = str,
+						default="img",
 						help ='output file name')
+	dpi_default = 300
 	parser.add_argument('--dpi',
 						required=False,
 						type = int,
-						default=300,
-						help ='image resolution in pixels per inch, default is 300')
+						default=dpi_default,
+						help ='image resolution in pixels per inch, default is ' + str(dpi_default))
 	parser.add_argument('--invert',
 						required=False,
 						action='store_true',
@@ -177,7 +189,7 @@ def parse_args() -> argparse.ArgumentParser:
 	return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main():
 	args = parse_args()
 
 	# Initialize seed random
@@ -200,6 +212,11 @@ if __name__ == "__main__":
 	# Show the Fourier transform
 	speckle_fft(img)
 
-	print("saving pattern to img.png")
-	img.save("img.png", dpi=(args.dpi, args.dpi))
+	img_name = args.output + "." + args.image_format
+	print("saving pattern to ", img_name)
+	img.save(img_name, dpi=(args.dpi, args.dpi))
 
+
+
+if __name__ == "__main__":
+	main()
